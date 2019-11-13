@@ -13,8 +13,11 @@
     Azure Region - must match the URL of your Databricks workspace, example northeurope
 
 .PARAMETER Principal
+    "The name of the principal that you want to add"
+    
+.PARAMETER PrincipalType
     "user_name"​​ || ​"group_name"​ ​|| "service_principal_name"
-
+    
 .PARAMETER PermissionLevel
     See Get-DatabricksPermissionLevels
     For Secret Scopes this value must be READ, WRITE or MANAGE
@@ -42,6 +45,7 @@ Function Set-DatabricksPermission
         [parameter(Mandatory=$false)][string]$BearerToken,
         [parameter(Mandatory=$false)][string]$Region,
         [parameter(Mandatory=$true)][string]$Principal,
+        [parameter(Mandatory=$true)][ValidateSet('user_name','group_name','service_principal_name')][string]$PrincipalType,
         [Parameter(Mandatory=$true)][string]$PermissionLevel,
         [Parameter(Mandatory=$true)][ValidateSet('job','cluster','instance-pool', 'secretScope')][string]$DatabricksObjectType,
         [Parameter(Mandatory=$true)][string]$DatabricksObjectId
@@ -73,7 +77,14 @@ Function Set-DatabricksPermission
         $BasePath = "$global:DatabricksURI/api/2.0/preview"
         $URI =  "$BasePath/permissions/$DatabricksObjectType" + "s/$DatabricksObjectId"
     
-        $acl = @(@{"user_name"= $Principal; "permission_level"=$PermissionLevel})
+    
+        switch ($PrincipalType) 
+        { 
+            "user_name" {$acl = @(@{"user_name"= $Principal; "permission_level"=$PermissionLevel})} 
+            "group_name" {$acl = @(@{"group_name"= $Principal; "permission_level"=$PermissionLevel})} 
+            "service_principal_name" {$acl = @(@{"service_principal_name"= $Principal; "permission_level"=$PermissionLevel})} 
+        }
+        
         $Body = @{"access_control_list"= $acl} | ConvertTo-Json -Depth 10
 
         Write-Verbose $Body
